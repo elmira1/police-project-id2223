@@ -1,0 +1,7 @@
+# src/config.py
+
+
+HOPSWORKS_API_KEY = "KhWpbBwUmvPXARpb.VGDZI0glGwGw9SslOvHeFuA2ibvEgXgEU78cfxF3NlBAcDEyO51fJI6miyIITEyQ"
+
+
+HOPSWORKS_PROJECT_NAME = "id2223_lab1_G22"
