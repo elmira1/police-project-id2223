@@ -1,160 +1,271 @@
+# src/3_inference_pipeline.py
 import os
+import json
+import datetime as dt
+import concurrent.futures
+
 import pandas as pd
+import requests
 import hopsworks
 import joblib
-import datetime
+
+import matplotlib
+matplotlib.use("Agg")  # safe for GitHub Actions / servers
 import matplotlib.pyplot as plt
-import seaborn as sns
-import json
-import requests
-import concurrent.futures  # <--- NEW: Added for parallel processing
 
-# --- Settings & Path ---
-api_key = None
-project_name = "id2223_lab1_G22"
-CACHE_FILE = "src/city_coords.json" 
+from sklearn.metrics import confusion_matrix
 
+
+# -----------------------------
+# Config
+# -----------------------------
+# Read Hopsworks credentials from src/config.py if available.
+# Otherwise use environment variables (GitHub Actions / HF Spaces).
 try:
     import config
-    api_key = config.HOPSWORKS_API_KEY
-    project_name = config.HOPSWORKS_PROJECT_NAME
-except ImportError:
-    api_key = os.environ.get('HOPSWORKS_API_KEY')
+    API_KEY = config.HOPSWORKS_API_KEY
+    PROJECT_NAME = config.HOPSWORKS_PROJECT_NAME
+except Exception:
+    API_KEY = os.environ.get("HOPSWORKS_API_KEY")
+    PROJECT_NAME = os.environ.get("HOPSWORKS_PROJECT_NAME", "id2223_lab1_G22")
 
-if api_key is None:
-    raise Exception("API Key not found!")
+CACHE_FILE = "src/city_coords.json"
+MODEL_NAME = "police_crime_model"
 
-# NEW: Helper function to get tomorrow's rain forecast (OPTIMIZED/PARALLEL)
+# Feature Group versions (keep stable)
+EVENTS_FG_NAME = "police_events"
+EVENTS_FG_VERSION = 1
+
+PRED_FG_NAME = "police_predictions"
+PRED_FG_VERSION = 4   # you already created v4 successfully, keep it
+
+if not API_KEY:
+    raise RuntimeError("Missing HOPSWORKS_API_KEY")
+
+
+# -----------------------------
+# Weather helper (parallel)
+# -----------------------------
 def get_tomorrow_weather(city_list):
-    # 1. Check if cache exists
+    """
+    Fetch tomorrow precipitation for each city using Open-Meteo.
+    Uses cached city coordinates from CACHE_FILE.
+    Parallel requests to speed up.
+    """
     if not os.path.exists(CACHE_FILE):
-        return {city: 0.0 for city in city_list}
-    
-    # 2. Load coordinates
-    with open(CACHE_FILE, "r", encoding='utf-8') as f:
+        print("⚠️ No coord cache found. Using 0.0 precipitation.")
+        return {c: 0.0 for c in city_list}
+
+    with open(CACHE_FILE, "r", encoding="utf-8") as f:
         coords_map = json.load(f)
-    
-    print(f"🌦️ Fetching tomorrow's weather for {len(city_list)} cities in PARALLEL...")
-    weather_forecast = {}
 
-    # --- Worker Function for ThreadPool ---
-    def fetch_single_city(city):
-        if city in coords_map:
-            lat, lon = coords_map[city]['lat'], coords_map[city]['lon']
-            url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=precipitation_sum&timezone=auto&forecast_days=2"
-            try:
-                # Timeout is important for parallel requests
-                res = requests.get(url, timeout=10).json()
-                rain = res['daily']['precipitation_sum'][1] # [1] is tomorrow
-                return city, rain
-            except:
-                return city, 0.0
-        return city, 0.0
-    # --------------------------------------
+    def fetch_city(city):
+        info = coords_map.get(city)
+        if not info:
+            return city, 0.0
 
-    # 3. Parallel Execution (10 workers = 10x speed)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        # Submit all tasks
-        future_to_city = {executor.submit(fetch_single_city, city): city for city in city_list}
-        
-        # Collect results as they finish
-        for future in concurrent.futures.as_completed(future_to_city):
-            city, rain = future.result()
-            weather_forecast[city] = rain
-            
-    return weather_forecast
+        lat, lon = info["lat"], info["lon"]
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={lat}&longitude={lon}"
+            "&daily=precipitation_sum"
+            "&timezone=auto"
+            "&forecast_days=2"
+        )
+        try:
+            r = requests.get(url, timeout=10).json()
+            rain = float(r["daily"]["precipitation_sum"][1])  # index 1 = tomorrow
+            return city, rain
+        except Exception:
+            return city, 0.0
 
-def inference():
-    # 1. Connect
-    project = hopsworks.login(api_key_value=api_key, project=project_name)
+    out = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        futures = [ex.submit(fetch_city, c) for c in city_list]
+        for fu in concurrent.futures.as_completed(futures):
+            c, rain = fu.result()
+            out[c] = rain
+
+    return out
+
+
+def save_confusion_matrix_png(cm, labels, out_path: str, title: str):
+    """
+    Save a confusion matrix figure as PNG.
+    """
+    plt.figure(figsize=(12, 10))
+    plt.imshow(cm, interpolation="nearest")
+    plt.title(title)
+    plt.colorbar()
+
+    tick = range(len(labels))
+    plt.xticks(tick, labels, rotation=90)
+    plt.yticks(tick, labels)
+
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, cm[i, j], ha="center", va="center", fontsize=8)
+
+    plt.tight_layout()
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    plt.savefig(out_path, dpi=250, bbox_inches="tight")
+    plt.close()
+
+
+def get_best_model(mr):
+    """
+    Get best model automatically.
+    1) Try max balanced_accuracy
+    2) Fallback: latest model by created_timestamp
+    """
+    try:
+        return mr.get_best_model(name=MODEL_NAME, metric="balanced_accuracy", direction="max")
+    except Exception as e:
+        print(f"⚠️ get_best_model(balanced_accuracy) failed: {e}")
+        print("➡️ Fallback to latest model by created_timestamp")
+        return mr.get_best_model(name=MODEL_NAME, metric="created_timestamp", direction="max")
+
+
+# -----------------------------
+# Main
+# -----------------------------
+def inference_and_monitor():
+    """
+    1) Batch inference for tomorrow for all cities x 24 hours and store predictions
+    2) Monitoring: evaluate on latest real events (true label exists) and save CM + table
+    """
+    print("✅ RUNNING inference_and_monitor (auto-best-model)")
+
+    project = hopsworks.login(api_key_value=API_KEY, project=PROJECT_NAME)
     fs = project.get_feature_store()
     mr = project.get_model_registry()
-    
-    # 2. Download Model
-    print("📥 Downloading smart model assets...")
-    retrieved_model = mr.get_model(name="police_crime_model", version=10) 
-    saved_model_dir = retrieved_model.download()
-    
-    model = joblib.load(saved_model_dir + "/police_model.pkl")
-    le_city = joblib.load(saved_model_dir + "/city_encoder.pkl")
-    le_day = joblib.load(saved_model_dir + "/day_encoder.pkl")
-    le_type = joblib.load(saved_model_dir + "/type_encoder.pkl")
-    
-    # 3. Create Batch Data
-    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-    tomorrow_str = tomorrow.strftime('%Y-%m-%d')
-    day_name = tomorrow.strftime('%A')
-    
-    target_cities = le_city.classes_
-    weather_map = get_tomorrow_weather(target_cities) # This runs fast now!
-    
-    batch_data = []
-    print(f"🔮 Generating predictions for {len(target_cities)} cities...")
-    
-    for city in target_cities:
-        rain = weather_map.get(city, 0.0)
+
+    # ---- Load best model
+    print("📥 Fetching best model from registry...")
+    model_obj = get_best_model(mr)
+    model_version = getattr(model_obj, "version", "unknown")
+    print(f"✅ Using model version: {model_version}")
+
+    model_dir = model_obj.download()
+    model = joblib.load(os.path.join(model_dir, "model.pkl"))  # sklearn Pipeline
+
+    # ---- Read latest events
+    fg_events = fs.get_feature_group(EVENTS_FG_NAME, version=EVENTS_FG_VERSION)
+    df_events = fg_events.read()
+
+    cities = sorted(df_events["city"].dropna().unique().tolist())
+
+    tomorrow = dt.date.today() + dt.timedelta(days=1)
+    tomorrow_str = tomorrow.strftime("%Y-%m-%d")
+    day_name = tomorrow.strftime("%A")
+
+    # ---- Forecast weather
+    print(f"🌦️ Fetching tomorrow precipitation for {len(cities)} cities...")
+    weather_map = get_tomorrow_weather(cities)
+
+    # ---- Build batch dataframe for tomorrow
+    rows = []
+    for city in cities:
+        rain = float(weather_map.get(city, 0.0))
         for hour in range(24):
-            batch_data.append({
-                "date": tomorrow_str,
+            rows.append({
+                "date": pd.to_datetime(tomorrow_str),
                 "city": city,
                 "day_of_week": day_name,
-                "hour": hour,
-                "precipitation": rain 
+                "hour": int(hour),
+                "precipitation": rain,
             })
-            
-    df_batch = pd.DataFrame(batch_data)
-    
-    # 4. Encoding
-    df_batch['day_of_week_encoded'] = le_day.transform(df_batch['day_of_week'])
-    df_batch['city_encoded'] = le_city.transform(df_batch['city'])
-    
-    # Select Features matching the Training Pipeline
-    X_pred = df_batch[['city_encoded', 'hour', 'day_of_week_encoded', 'precipitation']]
-    
-    # 5. Predict
-    y_pred_encoded = model.predict(X_pred)
-    df_batch['predicted_crime_type'] = le_type.inverse_transform(y_pred_encoded)
-    
-    # FIX: Convert 'date' string to actual datetime objects
-    df_batch['date'] = pd.to_datetime(df_batch['date'])
 
-    # FIX: Keep columns
-    cols_to_keep = ["date", "city", "hour", "day_of_week", "precipitation", "predicted_crime_type", "day_of_week_encoded"]
-    df_to_insert = df_batch[cols_to_keep]
+    df_batch = pd.DataFrame(rows)
 
-    # 6. Save to Hopsworks
-    print("💾 Saving predictions to Feature Store...")
-    
+    # Pipeline expects raw columns (strings + numeric)
+    X_pred = df_batch[["city", "day_of_week", "hour", "precipitation"]]
+    print(f"🔮 Predicting for {len(cities)} cities x 24 hours...")
+    df_batch["predicted_type"] = model.predict(X_pred).astype(str)
+
+    # ---- Save distribution chart (tomorrow)
+    dist = df_batch["predicted_type"].value_counts()
+    top_k = 12
+    dist_top = dist.head(top_k)
+
+    plt.figure(figsize=(12, 5))
+    plt.bar(dist_top.index.astype(str), dist_top.values)
+    plt.xticks(rotation=45, ha="right")
+    plt.title(f"Predicted Event Type Distribution (Tomorrow) - {tomorrow_str}")
+    plt.ylabel("Count (city x hour)")
+    plt.tight_layout()
+    plt.savefig("predicted_type_distribution.png")
+    plt.close()
+    print("📊 Saved: predicted_type_distribution.png")
+
+    # ---- Store predictions in Feature Group
     pred_fg = fs.get_or_create_feature_group(
-        name="police_predictions",
-        version=2,
+        name=PRED_FG_NAME,
+        version=PRED_FG_VERSION,
         primary_key=["date", "city", "hour"],
         event_time="date",
-        description="Daily crime predictions with weather data"
+        description="Daily predicted police event types (city/day/hour + precipitation)"
     )
-    
+
+    df_to_insert = df_batch[["date", "city", "hour", "day_of_week", "precipitation", "predicted_type"]].copy()
+
+    print("💾 Inserting predictions to Hopsworks...")
     pred_fg.insert(df_to_insert, write_options={"wait_for_job": False})
-    
-    # 7. Chart
-    city_summary = df_batch.groupby('city').agg({
-        'precipitation': 'mean',
-        'predicted_crime_type': lambda x: x.mode()[0]
-    }).sort_values('precipitation', ascending=False).head(10)
+    print("✅ Predictions inserted.")
 
-    plt.figure(figsize=(14, 7))
-    sns.barplot(x=city_summary.index, y=city_summary['precipitation'], palette="Blues_d")
-    
-    for i, city in enumerate(city_summary.index):
-        plt.text(i, city_summary['precipitation'][i], city_summary['predicted_crime_type'][i], 
-                 rotation=45, ha='center', va='bottom', fontsize=9)
-
-    plt.title(f"Predicted Weather & Crime for {tomorrow_str} (Top 10 Rainiest Cities)")
-    plt.ylabel("Expected Rain (mm)")
-    plt.xticks(rotation=45)
+    # ---- Simple forecast chart: top 10 rainiest cities
+    top = (
+        df_to_insert.groupby("city", as_index=False)
+        .agg(precipitation=("precipitation", "mean"))
+        .sort_values("precipitation", ascending=False)
+        .head(10)
+    )
+    plt.figure(figsize=(12, 5))
+    plt.bar(top["city"], top["precipitation"])
+    plt.xticks(rotation=45, ha="right")
+    plt.title(f"Top 10 Rainiest Cities (Forecast) - {tomorrow_str}")
+    plt.ylabel("Precipitation (mm)")
     plt.tight_layout()
     plt.savefig("crime_forecast.png")
-    
-    print("🎉 All done! Smart predictions are live.")
+    plt.close()
+    print("📊 Saved: crime_forecast.png")
+
+    # -----------------------------
+    # Monitoring on latest REAL events
+    # -----------------------------
+    N = 200
+    df_recent = df_events.sort_values("datetime").tail(N).copy()
+    df_recent = df_recent.dropna(subset=["city", "day_of_week", "hour", "precipitation", "type"])
+
+    X_recent = df_recent[["city", "day_of_week", "hour", "precipitation"]]
+    y_true = df_recent["type"].astype(str)
+    y_hat = model.predict(X_recent).astype(str)
+
+    # Save recent table (last 30 rows)
+    out_table = pd.DataFrame({
+        "datetime": df_recent["datetime"].astype(str).values,
+        "city": df_recent["city"].values,
+        "hour": df_recent["hour"].values,
+        "day_of_week": df_recent["day_of_week"].values,
+        "precipitation": df_recent["precipitation"].values,
+        "true_type": y_true.values,
+        "pred_type": y_hat,
+    }).tail(30)
+
+    out_table.to_csv("monitor_recent.csv", index=False, encoding="utf-8")
+    print("🧾 Saved: monitor_recent.csv")
+
+    labels = sorted(list(set(y_true.unique()) | set(pd.Series(y_hat).unique())))
+    cm = confusion_matrix(y_true, y_hat, labels=labels)
+    save_confusion_matrix_png(
+        cm, labels, "monitor_confusion_matrix.png",
+        title=f"Monitoring Confusion Matrix (Last {len(df_recent)} real events)"
+    )
+    print("🧠 Saved: monitor_confusion_matrix.png")
+
+    print("🎉 Inference + Monitoring finished successfully!")
+
 
 if __name__ == "__main__":
-    inference()
+    inference_and_monitor()

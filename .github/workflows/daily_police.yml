@@ -1,58 +1,52 @@
+# .github/workflows/police-daily-update.yml
 name: police-daily-update
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8 * * *' # Runs every day at 08:00 UTC
+    - cron: "0 6 * * *" # 06:00 UTC every day
+
+concurrency:
+  group: police-daily-update
+  cancel-in-progress: true
 
 jobs:
   schedule_pipelines:
     runs-on: ubuntu-latest
 
     permissions:
-      pages: write
       contents: write
 
     steps:
-      - name: checkout repo content
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: setup python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
 
-      - name: install python packages
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: execute python pipelines
+      - name: Run daily pipelines (features + inference)
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT_NAME: id2223_lab1_G22
         run: |
-          # 1. Update features with new data
           python src/1_daily_feature_pipeline.py
-          
-          # 2. Retrain the model with the latest data
-          # python src/2_training_pipeline.py
-          
-          # 3. Generate new predictions and charts
           python src/3_inference_pipeline.py
 
-      - name: github pages publish
+      - name: Commit updated outputs
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Police Crime Dashboard updated"
-          commit_options: '--no-verify --signoff'
-          
-          # This saves the generated image back to your repository
-          file_pattern: 'crime_forecast.png'
-          
-          repository: .
-          status_options: '--untracked-files=no'
-          skip_dirty_check: true
-          skip_fetch: true
-          skip_checkout: true
-          push_options: '--force'
+          commit_message: "Daily update: forecasts + monitoring"
+          file_pattern: |
+            crime_forecast.png
+            predicted_type_distribution.png
+            monitor_confusion_matrix.png
+            monitor_recent.csv
+            src/city_coords.json
