@@ -36,7 +36,7 @@ jobs:
           python src/1_daily_feature_pipeline.py
           
           # 2. Retrain the model with the latest data
-          python src/2_training_pipeline.py
+          # python src/2_training_pipeline.py
           
           # 3. Generate new predictions and charts
           python src/3_inference_pipeline.py
