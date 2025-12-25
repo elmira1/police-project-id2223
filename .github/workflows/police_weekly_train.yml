@@ -1,17 +1,27 @@
-name: police-weekly-train
+name: run_weekly
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 5 * * 0" # Sunday 05:00 UTC
+    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: police-pipelines
+  cancel-in-progress: true
 
 jobs:
-  run_weekly:
+  weekly:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -19,14 +29,13 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
-      - name: Install dependencies (pinned)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip uninstall -y hopsworks hsfs hsml hopsworks-common || true
           pip install -r requirements.txt
           python -c "import hopsworks, sklearn; print('hopsworks=', hopsworks.__version__); print('sklearn=', sklearn.__version__)"
 
-      - name: Run pipelines (weekly train)
+      - name: Run pipelines (weekly)
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           HOPSWORKS_PROJECT_NAME: id2223_lab1_G22
@@ -45,4 +54,4 @@ jobs:
             monitor_confusion_matrix.png
             monitor_recent.csv
             src/city_coords.json
-          push_options: "--force"
+            src/weather_cache.json

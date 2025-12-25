@@ -1,31 +1,51 @@
 datetime,city,hour,day_of_week,precipitation,true_type,pred_type
-2025-12-23 18:09:53+00:00,Karlstad,18,Tuesday,0.0,Rattfylleri,Trafikolycka
-2025-12-23 18:12:53+00:00,Norrköping,18,Tuesday,0.0,Trafikolycka,Trafikolycka
-2025-12-23 18:20:17+00:00,Jämtlands län,18,Tuesday,0.0,"Trafikolycka, vilt",Trafikolycka
-2025-12-23 18:21:40+00:00,Göteborg,18,Tuesday,0.0,Bråk,Trafikolycka
-2025-12-23 18:22:03+00:00,Örebro,18,Tuesday,0.0,Fylleri/LOB,Narkotikabrott
-2025-12-23 18:29:38+00:00,Borås,18,Tuesday,0.0,Trafikolycka,Trafikolycka
-2025-12-23 18:42:24+00:00,Gislaved,18,Tuesday,0.0,Brand,Trafikolycka
-2025-12-23 18:47:00+00:00,Norrköping,18,Tuesday,0.0,Trafikolycka,Trafikolycka
-2025-12-23 18:49:37+00:00,Örebro,18,Tuesday,0.0,Fylleri/LOB,Narkotikabrott
-2025-12-23 18:57:34+00:00,Gävle,18,Tuesday,0.1,Fylleri/LOB,Trafikolycka
-2025-12-23 19:03:25+00:00,Karlshamn,19,Tuesday,0.0,Trafikolycka,Trafikolycka
-2025-12-23 19:24:54+00:00,Stockholm,19,Tuesday,0.2,Brand,Trafikolycka
-2025-12-23 19:49:21+00:00,Håbo,19,Tuesday,0.0,Misshandel,Trafikolycka
-2025-12-23 20:14:54+00:00,Bjuv,20,Tuesday,0.0,"Trafikolycka, vilt",Trafikolycka
-2025-12-23 20:42:10+00:00,Västra Götalands län,20,Tuesday,0.0,Övrigt,Övrigt
-2025-12-23 20:42:23+00:00,Hallands län,20,Tuesday,0.0,Övrigt,Övrigt
-2025-12-23 20:56:05+00:00,Luleå,20,Tuesday,0.0,Ofredande/förargelse,Trafikolycka
-2025-12-24 05:25:25+00:00,Växjö,5,Wednesday,0.0,Stöld,Sammanfattning natt
-2025-12-24 05:31:00+00:00,Karlshamn,5,Wednesday,0.0,Rattfylleri,Sammanfattning natt
-2025-12-24 05:43:59+00:00,Helsingborg,5,Wednesday,0.0,Inbrott,Sammanfattning natt
-2025-12-24 06:01:12+00:00,Uppsala,6,Wednesday,0.0,Stöld/inbrott,Sammanfattning natt
-2025-12-24 06:04:53+00:00,Västra Götalands län,6,Wednesday,0.0,Sammanfattning natt,Övrigt
-2025-12-24 06:05:10+00:00,Hallands län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
-2025-12-24 06:07:20+00:00,Enköping,6,Wednesday,0.0,Stöld/inbrott,Sammanfattning natt
-2025-12-24 06:10:45+00:00,Surahammar,6,Wednesday,0.0,Rattfylleri,Sammanfattning natt
-2025-12-24 06:10:51+00:00,Värmlands län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
-2025-12-24 06:10:53+00:00,Dalarnas län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
-2025-12-24 06:10:56+00:00,Örebro län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
-2025-12-24 06:10:56+00:00,Örebro län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
-2025-12-24 06:16:10+00:00,Norrbottens län,6,Wednesday,0.0,Sammanfattning natt,Sammanfattning natt
+2025-12-24 06:10:53+00:00,Dalarnas län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:10:56+00:00,Örebro län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:10:56+00:00,Örebro län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:16:10+00:00,Norrbottens län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:20:32+00:00,Västerbottens län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:22:22+00:00,Västernorrlands län,6,Wednesday,0.2,Sammanfattning natt,3
+2025-12-24 06:28:00+00:00,Älvkarleby,6,Wednesday,0.0,Rån,3
+2025-12-24 06:29:29+00:00,Jämtlands län,6,Wednesday,0.3,Sammanfattning natt,3
+2025-12-24 06:31:39+00:00,Jönköpings län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:31:58+00:00,Södermanlands län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:32:26+00:00,Östergötlands län,6,Wednesday,0.0,Sammanfattning natt,3
+2025-12-24 06:47:15+00:00,Falun,6,Wednesday,0.0,Försvunnen person,3
+2025-12-24 08:35:00+00:00,Lycksele,8,Wednesday,0.0,Trafikkontroll,3
+2025-12-24 09:04:17+00:00,Vänersborg,9,Wednesday,0.0,Anträffad död,3
+2025-12-24 10:03:04+00:00,Nässjö,10,Wednesday,0.0,"Farligt föremål, misstänkt",3
+2025-12-24 11:02:27+00:00,Örebro,11,Wednesday,0.0,Trafikolycka,3
+2025-12-24 11:08:40+00:00,Örebro,11,Wednesday,0.0,Trafikolycka,3
+2025-12-24 11:37:43+00:00,Hudiksvall,11,Wednesday,0.0,"Trafikolycka, personskada",3
+2025-12-24 11:43:09+00:00,Luleå,11,Wednesday,0.0,Trafikolycka,3
+2025-12-24 11:46:48+00:00,Västerbottens län,11,Wednesday,0.0,"Trafikolycka, vilt",3
+2025-12-24 12:17:30+00:00,Surahammar,12,Wednesday,0.0,"Trafikolycka, personskada",3
+2025-12-24 12:23:26+00:00,Söderhamn,12,Wednesday,0.0,Trafikolycka,3
+2025-12-24 12:33:38+00:00,Umeå,12,Wednesday,0.0,Brand,3
+2025-12-24 12:40:20+00:00,Ljungby,12,Wednesday,0.0,Övrigt,3
+2025-12-24 12:42:44+00:00,Kronobergs län,12,Wednesday,0.0,Övrigt,3
+2025-12-24 12:43:31+00:00,Kalmar län,12,Wednesday,0.0,Övrigt,3
+2025-12-24 12:44:14+00:00,Blekinge län,12,Wednesday,0.0,Övrigt,3
+2025-12-24 12:44:47+00:00,Skåne län,12,Wednesday,0.0,Övrigt,3
+2025-12-24 12:53:47+00:00,Hedemora,12,Wednesday,0.0,Stöld,3
+2025-12-24 12:57:52+00:00,Uppsala,12,Wednesday,0.0,Misshandel,3
+2025-12-24 12:58:30+00:00,Kristinehamn,12,Wednesday,0.0,Stöld/inbrott,3
+2025-12-24 12:59:16+00:00,Uddevalla,12,Wednesday,0.0,"Trafikolycka, personskada",3
+2025-12-24 13:17:40+00:00,Örebro,13,Wednesday,0.0,Trafikolycka,3
+2025-12-24 13:29:38+00:00,Västerbottens län,13,Wednesday,0.0,Trafikkontroll,3
+2025-12-24 13:32:49+00:00,Sundsvall,13,Wednesday,0.0,Brand,3
+2025-12-24 13:42:38+00:00,Piteå,13,Wednesday,0.0,Trafikkontroll,3
+2025-12-24 13:43:42+00:00,Sandviken,13,Wednesday,0.0,Försvunnen person,3
+2025-12-24 13:47:19+00:00,Sundsvall,13,Wednesday,0.0,Trafikkontroll,3
+2025-12-24 13:52:24+00:00,Jämtlands län,13,Wednesday,0.3,Trafikkontroll,3
+2025-12-24 13:54:57+00:00,Sundsvall,13,Wednesday,0.0,"Trafikolycka, vilt",3
+2025-12-25 00:09:03+00:00,Helsingborg,0,Thursday,0.0,"Trafikolycka, personskada",3
+2025-12-25 01:05:46+00:00,Kristinehamn,1,Thursday,0.0,Brand,3
+2025-12-25 05:32:04+00:00,Hässleholm,5,Thursday,0.0,Inbrott,3
+2025-12-25 06:00:49+00:00,Värmlands län,6,Thursday,0.0,Sammanfattning natt,3
+2025-12-25 06:00:52+00:00,Dalarnas län,6,Thursday,0.0,Sammanfattning natt,3
+2025-12-25 06:00:55+00:00,Örebro län,6,Thursday,0.0,Sammanfattning natt,3
+2025-12-25 06:05:26+00:00,Hallands län,6,Thursday,0.0,Sammanfattning natt,3
+2025-12-25 06:05:40+00:00,Västra Götalands län,6,Thursday,0.0,Sammanfattning natt,3
+2025-12-25 06:10:38+00:00,Stockholm,6,Thursday,0.0,Misshandel,3
+2025-12-25 06:12:22+00:00,Norrbottens län,6,Thursday,2.0,Sammanfattning natt,3
