@@ -44,6 +44,13 @@ jobs:
           python src/2_training_pipeline.py
           python src/3_inference_pipeline.py
 
+      - name: Sync with remote main (avoid non-fast-forward)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git rebase origin/main
+
       - name: Commit dashboard artifacts
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
