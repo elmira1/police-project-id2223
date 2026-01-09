@@ -5,32 +5,38 @@ import time
 import requests
 import pandas as pd
 import hopsworks
-from datetime import date
 from geopy.geocoders import Nominatim
 
-# --- Login Settings ---
+# ✅ Add label grouping
+from label_map import add_type_group
+
+
+# -----------------------------
+# Config / Secrets
+# -----------------------------
 api_key = None
 project_name = "id2223_lab1_G22"
 
-CACHE_FILE = "src/city_coords.json"          # city -> {lat, lon}
-WEATHER_CACHE_FILE = "src/weather_cache.json" # (city|yyyy-mm-dd) -> precipitation
+CACHE_FILE = "src/city_coords.json"            # city -> {lat, lon}
+WEATHER_CACHE_FILE = "src/weather_cache.json"  # (city|yyyy-mm-dd) -> precipitation
 
 try:
     import config
     api_key = config.HOPSWORKS_API_KEY
     project_name = config.HOPSWORKS_PROJECT_NAME
-except ImportError:
+except Exception:
     api_key = os.environ.get("HOPSWORKS_API_KEY")
     project_name = os.environ.get("HOPSWORKS_PROJECT_NAME", project_name)
 
 if not api_key:
-    raise Exception("API Key not found! Set HOPSWORKS_API_KEY.")
+    raise RuntimeError("API Key not found! Set HOPSWORKS_API_KEY.")
 
 SESSION = requests.Session()
 
-# ------------------------
-# Utilities: load/save cache
-# ------------------------
+
+# -----------------------------
+# Utilities: load/save JSON cache
+# -----------------------------
 def _load_json(path: str) -> dict:
     if os.path.exists(path):
         try:
@@ -40,13 +46,16 @@ def _load_json(path: str) -> dict:
             return {}
     return {}
 
+
 def _save_json(path: str, obj: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2, ensure_ascii=False)
 
-# ------------------------
+
+# -----------------------------
 # City coordinates (cached)
-# ------------------------
+# -----------------------------
 def get_smart_coordinates(city_list):
     city_cache = _load_json(CACHE_FILE)
 
@@ -54,17 +63,22 @@ def get_smart_coordinates(city_list):
     updated = False
 
     for city in sorted(set(city_list)):
-        if not city or city.strip() == "":
+        if not city or str(city).strip() == "":
             continue
+
         if city not in city_cache:
             print(f"🔍 New city: '{city}' -> geocoding...")
             try:
                 location = geolocator.geocode(f"{city}, Sweden", timeout=10)
                 if location:
-                    city_cache[city] = {"lat": float(location.latitude), "lon": float(location.longitude)}
+                    city_cache[city] = {
+                        "lat": float(location.latitude),
+                        "lon": float(location.longitude),
+                    }
                 else:
                     # Stockholm fallback
                     city_cache[city] = {"lat": 59.3293, "lon": 18.0686}
+
                 updated = True
                 time.sleep(1.1)  # be nice to Nominatim
             except Exception:
@@ -77,15 +91,21 @@ def get_smart_coordinates(city_list):
 
     return city_cache
 
-# ------------------------
+
+# -----------------------------
 # Weather (historical) via Open-Meteo Archive API (cached)
-# ------------------------
-def get_precipitation_for_city_date(city: str, lat: float, lon: float, yyyy_mm_dd: str, weather_cache: dict) -> float:
+# -----------------------------
+def get_precipitation_for_city_date(
+    city: str,
+    lat: float,
+    lon: float,
+    yyyy_mm_dd: str,
+    weather_cache: dict,
+) -> float:
     key = f"{city}|{yyyy_mm_dd}"
     if key in weather_cache:
         return float(weather_cache[key])
 
-    # Archive API (historical) - daily precipitation sum
     url = (
         "https://archive-api.open-meteo.com/v1/archive"
         f"?latitude={lat}&longitude={lon}"
@@ -103,15 +123,15 @@ def get_precipitation_for_city_date(city: str, lat: float, lon: float, yyyy_mm_d
     weather_cache[key] = precip
     return precip
 
+
 def add_weather_feature(df: pd.DataFrame, coords_map: dict) -> pd.DataFrame:
     print("🌦️ Adding historical precipitation (Archive API)...")
     weather_cache = _load_json(WEATHER_CACHE_FILE)
     updated = False
 
-    # create a date column
+    # string date for caching
     df["event_date"] = df["datetime"].dt.date.astype(str)
 
-    # fetch only unique (city, date)
     pairs = df[["city", "event_date"]].drop_duplicates()
 
     precip_map = {}
@@ -120,21 +140,27 @@ def add_weather_feature(df: pd.DataFrame, coords_map: dict) -> pd.DataFrame:
         d = row["event_date"]
         lat = coords_map.get(city, {}).get("lat", 59.3293)
         lon = coords_map.get(city, {}).get("lon", 18.0686)
+
         precip = get_precipitation_for_city_date(city, lat, lon, d, weather_cache)
         precip_map[f"{city}|{d}"] = precip
         updated = True
 
-    df["precipitation"] = df.apply(lambda r: precip_map.get(f"{r['city']}|{r['event_date']}", 0.0), axis=1)
+    df["precipitation"] = df.apply(
+        lambda r: float(precip_map.get(f"{r['city']}|{r['event_date']}", 0.0)),
+        axis=1,
+    )
 
     if updated:
         _save_json(WEATHER_CACHE_FILE, weather_cache)
         print("✅ Weather cache updated.")
 
+    df = df.drop(columns=["event_date"], errors="ignore")
     return df
 
-# ------------------------
+
+# -----------------------------
 # Police data
-# ------------------------
+# -----------------------------
 def get_police_data() -> pd.DataFrame | None:
     url = "https://polisen.se/api/events"
     print(f"⬇️ Downloading police events: {url}")
@@ -156,7 +182,7 @@ def get_police_data() -> pd.DataFrame | None:
         print("⚠️ No data returned.")
         return None
 
-    # city from location.name (safe)
+    # city from location.name
     def _extract_city(loc):
         try:
             return loc.get("name", "Unknown")
@@ -169,44 +195,64 @@ def get_police_data() -> pd.DataFrame | None:
     df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce", utc=True)
     df = df.dropna(subset=["datetime"])
 
-    df["hour"] = df["datetime"].dt.hour
-    df["day_of_week"] = df["datetime"].dt.day_name()
+    df["hour"] = df["datetime"].dt.hour.astype(int)
+    df["day_of_week"] = df["datetime"].dt.day_name().astype(str)
 
     # coords + weather
-    coords_map = get_smart_coordinates(df["city"].unique())
+    coords_map = get_smart_coordinates(df["city"].dropna().unique())
     df = add_weather_feature(df, coords_map)
 
-    # final columns
-    df = df[["id", "datetime", "type", "city", "hour", "day_of_week", "precipitation"]].copy()
-    df["id"] = df["id"].astype(str)
+    # keep only needed columns
+    df = df[["id", "datetime", "city", "day_of_week", "hour", "precipitation", "type"]].copy()
 
-    # protect against duplicates inside a single run
+    # types
+    df["id"] = df["id"].astype(str)
+    df["city"] = df["city"].astype(str)
+    df["type"] = df["type"].astype(str)
+    df["precipitation"] = pd.to_numeric(df["precipitation"], errors="coerce").fillna(0.0).astype(float)
+
+    # protect against duplicates inside same run
     df = df.drop_duplicates(subset=["id"])
 
     return df
 
-# ------------------------
+
+# -----------------------------
 # Hopsworks
-# ------------------------
+# -----------------------------
 def to_hopsworks(df: pd.DataFrame):
     print("🔌 Connecting to Hopsworks...")
     project = hopsworks.login(api_key_value=api_key, project=project_name)
     fs = project.get_feature_store()
 
-    # Better primary key: id + datetime (safer), and event_time set
+    # ✅ Add grouped label BEFORE insert
+    df = add_type_group(df, src_col="type", dst_col="type_group")
+
+    # ✅ Ensure schema/columns are exactly what we want
+    required_cols = ["id", "datetime", "city", "day_of_week", "hour", "precipitation", "type", "type_group"]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"Missing required columns before insert: {missing}")
+
+    df = df[required_cols].copy()
+
+    # ✅ Create/Use Feature Group v2 (new schema, no conflict with v1)
     police_fg = fs.get_or_create_feature_group(
         name="police_events",
-        version=1,
-        primary_key=["id", "datetime"],
+        version=2,
+        primary_key=["id"],
         event_time="datetime",
-        description="Swedish Police events + historical precipitation (Open-Meteo Archive)"
+        description="Police events with weather + grouped label (type_group)",
     )
 
     print(f"⬆️ Uploading {len(df)} rows...")
     police_fg.insert(df, write_options={"wait_for_job": False})
     print("✅ Done. Features uploaded.")
 
+
 if __name__ == "__main__":
     df = get_police_data()
     if df is not None and not df.empty:
         to_hopsworks(df)
+    else:
+        print("⚠️ Nothing to upload.")
