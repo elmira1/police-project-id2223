@@ -1,18 +1,16 @@
 datetime,city,hour,day_of_week,precipitation,true_group,pred_group
-2026-01-09 12:50:08+00:00,Kiruna,12,Friday,0.0,Övrigt,Övrigt
-2026-01-09 13:37:18+00:00,Umeå,13,Friday,0.0,Trafik,Trafik
 2026-01-09 13:54:39+00:00,Kramfors,13,Friday,6.8,Trafik,Trafik
-2026-01-09 15:05:26+00:00,Falun,15,Friday,0.2,Övrigt,Övrigt
+2026-01-09 15:05:26+00:00,Falun,15,Friday,0.2,Övrigt,Trafik
 2026-01-09 15:19:06+00:00,Skellefteå,15,Friday,0.5,Trafik,Trafik
 2026-01-09 15:30:31+00:00,Östersund,15,Friday,0.4,Trafik,Trafik
-2026-01-09 15:35:38+00:00,Borlänge,15,Friday,0.2,Övrigt,Övrigt
+2026-01-09 15:35:38+00:00,Borlänge,15,Friday,0.2,Övrigt,Trafik
 2026-01-09 15:46:28+00:00,Växjö,15,Friday,0.0,Trafik,Trafik
 2026-01-09 16:10:36+00:00,Grums,16,Friday,0.1,Trafik,Trafik
-2026-01-09 16:25:53+00:00,Örebro,16,Friday,0.1,Rattfylleri/LOB,Våld
-2026-01-09 16:33:47+00:00,Hällefors,16,Friday,0.2,Övrigt,Övrigt
-2026-01-09 16:48:21+00:00,Jämtlands län,16,Friday,0.2,Trafik,Övrigt
+2026-01-09 16:25:53+00:00,Örebro,16,Friday,0.1,Rattfylleri/LOB,Trafik
+2026-01-09 16:33:47+00:00,Hällefors,16,Friday,0.2,Övrigt,Trafik
+2026-01-09 16:48:21+00:00,Jämtlands län,16,Friday,0.2,Trafik,Trafik
 2026-01-09 16:52:52+00:00,Nynäshamn,16,Friday,0.1,Våld,Våld
-2026-01-09 17:16:52+00:00,Borlänge,17,Friday,0.2,Stöld/Inbrott,Övrigt
+2026-01-09 17:16:52+00:00,Borlänge,17,Friday,0.2,Stöld/Inbrott,Trafik
 2026-01-09 17:19:20+00:00,Degerfors,17,Friday,0.0,Trafik,Trafik
 2026-01-09 17:40:35+00:00,Höganäs,17,Friday,0.0,Trafik,Trafik
 2026-01-09 17:47:44+00:00,Askersund,17,Friday,0.1,Trafik,Trafik
@@ -29,3 +27,5 @@ datetime,city,hour,day_of_week,precipitation,true_group,pred_group
 2026-01-09 20:23:41+00:00,Malmö,20,Friday,0.1,Övrigt,Övrigt
 2026-01-09 20:35:42+00:00,Norrbottens län,20,Friday,0.0,Trafik,Trafik
 2026-01-09 20:43:19+00:00,Umeå,20,Friday,0.0,Rattfylleri/LOB,Rattfylleri/LOB
+2026-01-09 20:54:21+00:00,Oskarshamn,20,Friday,0.2,Rattfylleri/LOB,Rattfylleri/LOB
+2026-01-09 21:13:04+00:00,Borlänge,21,Friday,0.2,Övrigt,Övrigt

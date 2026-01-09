@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix
 
+from xgboost import XGBClassifier
+
 
 # -----------------------------
 # Config
@@ -30,6 +32,7 @@ if not API_KEY:
 CACHE_FILE = "src/city_coords.json"
 
 MODEL_NAME = "police_crime_model"
+MIN_VERSION = 38
 
 EVENTS_FG_NAME = "police_events"
 EVENTS_FG_VERSION = 2  # must match your daily FG version
@@ -100,10 +103,13 @@ def save_confusion_matrix_png(cm, labels, out_path: str, title: str):
 
 
 def get_best_model(mr):
-    try:
-        return mr.get_best_model(MODEL_NAME, "balanced_accuracy", "max")
-    except Exception:
-        return mr.get_best_model(MODEL_NAME, "accuracy", "max")
+    models = mr.get_models(name=MODEL_NAME)
+    candidates = [m for m in models if m.version >= MIN_VERSION]
+    best_model = max(
+        candidates,
+        key=lambda m: m.training_metrics.get("balanced_accuracy", float("-inf"))
+    )
+    return best_model
 
 
 def predict_group(model_bundle, X: pd.DataFrame) -> pd.Series:
@@ -123,7 +129,7 @@ def inference_and_monitor():
     mr = project.get_model_registry()
 
     # ---- Load best model ----
-    print("📥 Fetching best model from registry...")
+    print("📥 Fetching latest model from registry...")
     best = get_best_model(mr)
     print(f"✅ Using model version: {best.version}")
     model_dir = best.download()
