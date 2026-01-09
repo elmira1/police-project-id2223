@@ -195,8 +195,8 @@ def get_police_data() -> pd.DataFrame | None:
     df["datetime"] = pd.to_datetime(df["datetime"], errors="coerce", utc=True)
     df = df.dropna(subset=["datetime"])
 
-    df["hour"] = df["datetime"].dt.hour.astype(int)
-    df["day_of_week"] = df["datetime"].dt.day_name().astype(str)
+    df["hour"] = df["datetime"].dt.hour
+    df["day_of_week"] = df["datetime"].dt.day_name()
 
     # coords + weather
     coords_map = get_smart_coordinates(df["city"].dropna().unique())
