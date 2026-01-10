@@ -10,20 +10,7 @@ FG_NAME = "police_events"
 FG_VERSION = 2
 
 PRED_FG_NAME = "police_predictions"
-PRED_FG_VERSION = 5
-
-MODEL_NAME = "police_crime_model"
-MODEL_MIN_VERSION = 38
-
-
-def get_best_model(mr):
-    models = mr.get_models(name=MODEL_NAME)
-    candidates = [m for m in models if m.version >= MODEL_MIN_VERSION]
-    best_model = max(
-        candidates,
-        key=lambda m: m.training_metrics.get("balanced_accuracy", float("-inf"))
-    )
-    return best_model
+PRED_FG_VERSION = 6
 
 
 # -----------------------------

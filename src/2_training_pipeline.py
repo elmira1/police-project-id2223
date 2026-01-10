@@ -97,6 +97,7 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
     vc = df[LABEL_COL].value_counts()
     keep = vc[vc >= min_count].index.tolist()
     df = df[df[LABEL_COL].isin(keep)].copy()
+    df = df.sort_values("datetime")
 
     print(f"✅ Kept {len(keep)} grouped classes (min_count={min_count})")
     print(f"✅ Rows after filtering: {len(df)}")
@@ -108,9 +109,16 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
     le = LabelEncoder()
     y_int = le.fit_transform(y)
 
+    """
     X_train, X_test, y_train, y_test = train_test_split(
         X, y_int, test_size=test_size, random_state=42, stratify=y_int
     )
+    """
+    num_train = int((1 - test_size) * len(X))
+    X_train = X.iloc[:num_train]
+    y_train = y_int[:num_train]
+    X_test = X.iloc[num_train:]
+    y_test = y_int[num_train:]
 
     print(f"✅ Train rows: {len(X_train)} | Test rows: {len(X_test)}")
 
