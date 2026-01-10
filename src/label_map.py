@@ -24,13 +24,13 @@ def normalize_text(x: str) -> str:
 
 def map_type_to_group(event_type: str) -> str:
     """
-    Map raw Polisen event 'type' (Swedish) -> 7 grouped classes.
+    Map raw Polisen event 'type' (Swedish).
     Robust to new/unknown labels.
     """
     t = normalize_text(event_type).lower()
 
     if not t:
-        return "Övrigt"
+        return "Other"
 
     # 2) Traffic
     trafik_keywords = [
@@ -46,29 +46,29 @@ def map_type_to_group(event_type: str) -> str:
 
     # 3) Drunk / LOB
     if "fylleri" in t or "lob" in t or "rattfyll" in t:
-        return "Rattfylleri/LOB"
+        return "DUI and intoxication"
 
     if traf:
-        return "Trafik"
+        return "Traffic incident"
 
     # 4) Violence
     vald_keywords = [
-        "misshandel", "våld", "våldt", "mord", "dråp", "rån", "bråk",
+        "misshandel", "våld", "våldt", "mord", "dråp", "bråk",
         "olaga hot", "hot", "hemfridsbrott", "vållande", "människorov",
         "skottlossning", "explosion", "sexualbrott"
     ]
     if any(k in t for k in vald_keywords):
-        return "Våld"
+        return "Violence"
 
     # 5) Theft / burglary
     if "stöld" in t or "inbrott" in t or "rån" in t:
-        return "Stöld/Inbrott"
+        return "Burglary, theft and robbery"
 
     # 6) Fire
     if "brand" in t:
-        return "Brand"
+        return "Fire"
 
-    return "Övrigt"
+    return "Other"
 
 
 def add_type_group(df: pd.DataFrame, src_col: str = "type", dst_col: str = "type_group") -> pd.DataFrame:
