@@ -1,9 +1,30 @@
 import os
-import json
 import streamlit as st
 import pandas as pd
 import hopsworks
-import joblib
+from datetime import date, timedelta
+import matplotlib.pyplot as plt
+
+
+FG_NAME = "police_events"
+FG_VERSION = 2
+
+PRED_FG_NAME = "police_predictions"
+PRED_FG_VERSION = 5
+
+MODEL_NAME = "police_crime_model"
+MODEL_MIN_VERSION = 38
+
+
+def get_best_model(mr):
+    models = mr.get_models(name=MODEL_NAME)
+    candidates = [m for m in models if m.version >= MODEL_MIN_VERSION]
+    best_model = max(
+        candidates,
+        key=lambda m: m.training_metrics.get("balanced_accuracy", float("-inf"))
+    )
+    return best_model
+
 
 # -----------------------------
 # Config
@@ -16,162 +37,106 @@ except Exception:
     API_KEY = os.environ.get("HOPSWORKS_API_KEY")
     PROJECT_NAME = os.environ.get("HOPSWORKS_PROJECT_NAME", "id2223_lab1_G22")
 
-MODEL_NAME = "police_crime_model"
-MODEL_VERSION = int(os.environ.get("MODEL_VERSION", "13"))  # you can override via env
-
 if not API_KEY:
     st.error("Missing HOPSWORKS_API_KEY (set it in env vars or src/config.py).")
     st.stop()
 
-st.set_page_config(page_title="Police Event Predictor", page_icon="👮", layout="wide")
-st.title("👮 Swedish Police Events Predictor")
-st.write("Predict police event type based on **city**, **day**, **hour**, and **precipitation**.")
-
-
-# -----------------------------
-# Load model + optional assets
-# -----------------------------
-@st.cache_resource(show_spinner=False)
-def load_model_and_assets():
-    """
-    Download model artifacts from Hopsworks and load the sklearn Pipeline (model.pkl).
-    Also load meta.json / confusion_matrix.png if they exist.
-    """
-    project = hopsworks.login(api_key_value=API_KEY, project=PROJECT_NAME)
-    mr = project.get_model_registry()
-
-    model_obj = mr.get_model(MODEL_NAME, version=MODEL_VERSION)
-    model_dir = model_obj.download()
-
-    pipeline = joblib.load(os.path.join(model_dir, "model.pkl"))
-
-    meta = None
-    meta_path = os.path.join(model_dir, "meta.json")
-    if os.path.exists(meta_path):
-        with open(meta_path, "r", encoding="utf-8") as f:
-            meta = json.load(f)
-
-    cm_path = os.path.join(model_dir, "confusion_matrix.png")
-    if not os.path.exists(cm_path):
-        cm_path = None
-
-    return pipeline, meta, cm_path
+TITLE = "Incident and Crime Forecast"
+DESCRIPTION = \
+    "Location-based incident and crime forecast based on events reported by the Swedish police."\
+    " Forecasts are based on temporal and weatherly features"\
+    " and predict the proportion of events the next day."\
+    "\n\n"\
+    "Current events can be found here:\n\n"\
+    "https://polisen.se/aktuellt/polisens-nyheter/"
+st.set_page_config(page_title=TITLE, page_icon="👮", layout="centered")
+st.title(TITLE)
+st.write(DESCRIPTION)
 
 
 @st.cache_data(show_spinner=False, ttl=600)
-def load_city_list():
+def load_predictions():
     """
     Read unique cities from the feature group.
     Cached for 10 minutes to reduce Hopsworks reads.
     """
     project = hopsworks.login(api_key_value=API_KEY, project=PROJECT_NAME)
     fs = project.get_feature_store()
-    fg = fs.get_feature_group("police_events", version=1)
+    fg = fs.get_feature_group(PRED_FG_NAME, version=PRED_FG_VERSION)
     df = fg.read()
-    return sorted(df["city"].dropna().unique().tolist())
+    return df
 
 
-with st.spinner("Loading model..."):
-    try:
-        model, meta, cm_path = load_model_and_assets()
-        st.success(f"Model loaded: {MODEL_NAME} (v{MODEL_VERSION})")
-    except Exception as e:
-        st.error(f"Failed to load model: {e}")
-        st.stop()
+@st.cache_data(show_spinner=False, ttl=600)
+def load_events():
+    project = hopsworks.login(api_key_value=API_KEY, project=PROJECT_NAME)
+    fs = project.get_feature_store()
+    fg = fs.get_feature_group(FG_NAME, version=FG_VERSION)
+    df = fg.read()
+    return df
 
-cities = load_city_list()
-if not cities:
-    st.warning("No cities found in Feature Group police_events.")
+
+tomorrow = pd.to_datetime(date.today() + timedelta(days=1)).date()
+yesterday = pd.to_datetime(date.today() - timedelta(days=1)).date()
+
+pred_df = load_predictions()
+pred_df = pred_df.rename(
+    columns={
+        "predicted_type_group": "Type",
+    }
+)
+tomorrow_pred_df = pred_df[pred_df["date"].dt.date == tomorrow]
+#yest_pred_df = pred_df[pred_df["date"].dt.date == yesterday]
+
+events_df = load_events()
+events_df = events_df.rename(
+    columns={
+        "type_group": "Type",
+    }
+)
+events_df = events_df[events_df["datetime"].dt.date == yesterday]
+
+
+locations = sorted(tomorrow_pred_df["city"].dropna().unique().tolist())
+if not locations:
+    st.warning(f"No cities found in Feature Group {PRED_FG_NAME}.")
     st.stop()
-
 
 # -----------------------------
 # Sidebar
 # -----------------------------
-st.sidebar.header("Inputs")
-selected_city = st.sidebar.selectbox("City", cities)
+DEFAULT_CITY = "Stockholm"
+st.sidebar.header("Menu")
+selected_location = st.sidebar.selectbox("Location", locations, index=locations.index(DEFAULT_CITY))
 
-days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-selected_day = st.sidebar.selectbox("Day of week", days)
+selected_loc_preds_df = tomorrow_pred_df[tomorrow_pred_df["city"] == selected_location]
+selected_loc_counts = selected_loc_preds_df["Type"].value_counts().sort_index()
+selected_loc_dist = selected_loc_counts / len(selected_loc_preds_df)
+selected_loc_dist = selected_loc_dist.rename("Proportion")
 
-selected_hour = st.sidebar.slider("Hour", 0, 23, 12)
-precip = st.sidebar.slider("Precipitation (mm)", 0.0, 30.0, 0.0, 0.1)
+total_pred_counts = tomorrow_pred_df["Type"].value_counts().sort_index()
+total_pred_dist = total_pred_counts / len(tomorrow_pred_df)
+total_pred_dist = total_pred_dist.rename("Proportion")
+
+total_past_counts = events_df["Type"].value_counts().sort_index()
+total_past_dist = total_past_counts / len(events_df)
+total_past_dist = total_past_dist.rename("Proportion")
+
+#yest_pred_counts = yest_pred_df["Type"].value_counts().sort_index()
+#yest_pred_dist = yest_pred_counts / len(yest_pred_df)
+#yest_pred_dist = yest_pred_dist.rename("Proportion")
+
+all_types = sorted(set(total_past_dist.index) | set(total_pred_dist.index))
+total_past_dist = total_past_dist.reindex(all_types, fill_value=0)
+#yest_pred_dist = yest_pred_dist.reindex(all_types, fill_value=0)
 
 
 # -----------------------------
 # Layout
 # -----------------------------
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.subheader("Prediction")
-
-    if st.button("Predict"):
-        X = pd.DataFrame([{
-            "city": selected_city,
-            "day_of_week": selected_day,
-            "hour": int(selected_hour),
-            "precipitation": float(precip),
-        }])
-
-        try:
-            pred = model.predict(X)[0]
-            st.markdown(f"### 🚨 {pred}")
-
-            # Probabilities (RandomForest supports predict_proba)
-            if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(X)[0]
-
-                # Get class order from the final estimator in the pipeline
-                classes = None
-                try:
-                    # In your training pipeline, the last step name is "model"
-                    if hasattr(model, "named_steps") and "model" in model.named_steps:
-                        classes = model.named_steps["model"].classes_
-                    else:
-                        # fallback: last step
-                        last_step_name = list(model.named_steps.keys())[-1]
-                        classes = model.named_steps[last_step_name].classes_
-                except Exception:
-                    classes = None
-
-                if classes is None:
-                    classes = [f"class_{i}" for i in range(len(proba))]
-
-                dfp = (
-                    pd.DataFrame({"class": classes, "prob": proba})
-                    .sort_values("prob", ascending=False)
-                    .head(10)
-                    .reset_index(drop=True)
-                )
-
-                st.write("Top probabilities:")
-                st.dataframe(dfp, use_container_width=True, hide_index=True)
-
-        except Exception as e:
-            st.error(f"Prediction failed: {e}")
-
-
-with col2:
-    st.subheader("Model info")
-
-    if meta:
-        st.write("Training metadata:")
-        st.json(meta)
-    else:
-        st.info("No meta.json found in the model artifacts (retrain with updated training script).")
-
-    if cm_path:
-        st.write("Confusion matrix (from training):")
-        st.image(cm_path, use_container_width=True)
-    else:
-        st.info("No confusion_matrix.png found in the model artifacts (retrain with updated training script).")
-
+st.subheader(f"{selected_location}, Tomorrow")
+st.bar_chart(selected_loc_dist)
 
 st.divider()
-st.subheader("Latest batch forecast chart (optional)")
-
-if os.path.exists("crime_forecast.png"):
-    st.image("crime_forecast.png", caption="Generated by inference pipeline", use_container_width=True)
-else:
-    st.caption("crime_forecast.png not found (run inference pipeline to generate it).")
+st.subheader(f"Sweden, Tomorrow")
+st.bar_chart(total_pred_dist)

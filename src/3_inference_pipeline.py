@@ -173,28 +173,10 @@ def inference_and_monitor():
             )
     df_batch = pd.DataFrame(rows)
 
-    print(f"🔮 Predicting for {len(cities)} cities x 24 hours = {len(df_batch)} rows...")
     X_pred = df_batch[feature_cols].copy()
     df_batch["predicted_type_group"] = predict_group(model_bundle, X_pred)
 
-    # Chart 1: rainiest cities
-    top = (
-        df_batch.groupby("city", as_index=False)
-        .agg(precipitation=("precipitation", "mean"))
-        .sort_values("precipitation", ascending=False)
-        .head(10)
-    )
-    plt.figure(figsize=(12, 5))
-    plt.bar(top["city"].astype(str), top["precipitation"].values)
-    plt.xticks(rotation=45, ha="right")
-    plt.title(f"Top 10 Rainiest Cities (Forecast) - {tomorrow_str}")
-    plt.ylabel("Precipitation (mm)")
-    plt.tight_layout()
-    plt.savefig("crime_forecast.png")
-    plt.close()
-    print("📊 Saved chart: crime_forecast.png")
-
-    # Chart 2: distribution of predicted groups
+    # Distribution of predicted groups
     dist = df_batch["predicted_type_group"].value_counts()
     plt.figure(figsize=(10, 5))
     plt.bar(dist.index.astype(str), dist.values)
