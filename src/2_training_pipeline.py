@@ -34,7 +34,7 @@ if not API_KEY:
 
 
 FG_NAME = "police_events"
-FG_VERSION = 2  # <-- important (we added type_group)
+FG_VERSION = 3
 
 MODEL_NAME = "police_crime_model"
 

@@ -32,10 +32,6 @@ def map_type_to_group(event_type: str) -> str:
     if not t:
         return "Övrigt"
 
-    # 1) Summaries (often very frequent)
-    if "sammanfattning" in t:
-        return "Sammanfattning"
-
     # 2) Traffic
     trafik_keywords = [
         "trafik", "körning", "rattfyll", "fordon", "hastighet",
@@ -58,7 +54,7 @@ def map_type_to_group(event_type: str) -> str:
     # 4) Violence
     vald_keywords = [
         "misshandel", "våld", "våldt", "mord", "dråp", "rån", "bråk",
-        "olaga hot", "hot", "hemfridsbrott", "vållande", "människorov"
+        "olaga hot", "hot", "hemfridsbrott", "vållande", "människorov",
     ]
     if any(k in t for k in vald_keywords):
         return "Våld"

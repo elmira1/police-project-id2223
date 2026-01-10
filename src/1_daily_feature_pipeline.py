@@ -236,10 +236,9 @@ def to_hopsworks(df: pd.DataFrame):
 
     df = df[required_cols].copy()
 
-    # ✅ Create/Use Feature Group v2 (new schema, no conflict with v1)
     police_fg = fs.get_or_create_feature_group(
         name="police_events",
-        version=2,
+        version=3,
         primary_key=["id"],
         event_time="datetime",
         description="Police events with weather + grouped label (type_group)",

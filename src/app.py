@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 
 FG_NAME = "police_events"
-FG_VERSION = 2
+FG_VERSION = 3
 
 PRED_FG_NAME = "police_predictions"
 PRED_FG_VERSION = 6

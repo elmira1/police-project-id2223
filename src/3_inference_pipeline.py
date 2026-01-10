@@ -32,7 +32,7 @@ if not API_KEY:
 CACHE_FILE = "src/city_coords.json"
 
 MODEL_NAME = "police_crime_model"
-MIN_VERSION = 41
+MIN_VERSION = 42
 
 EVENTS_FG_NAME = "police_events"
 EVENTS_FG_VERSION = 2  # must match your daily FG version
