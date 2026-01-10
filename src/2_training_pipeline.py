@@ -34,17 +34,17 @@ if not API_KEY:
 
 
 FG_NAME = "police_events"
-FG_VERSION = 3
+FG_VERSION = 5
 
 MODEL_NAME = "police_crime_model"
 
-FEATURE_COLS = ["city", "day_of_week", "hour", "precipitation"]
+FEATURE_COLS = ["city", "day_of_week", "hour", "precipitation", "temperature", "wind"]
 LABEL_COL = "type_group"
 
 
 def build_pipeline() -> Pipeline:
     cat_cols = ["city", "day_of_week"]
-    num_cols = ["hour", "precipitation"]
+    num_cols = ["hour", "precipitation", "temperature", "wind"]
 
     pre = ColumnTransformer(
         transformers=[
@@ -109,11 +109,6 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
     le = LabelEncoder()
     y_int = le.fit_transform(y)
 
-    """
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y_int, test_size=test_size, random_state=42, stratify=y_int
-    )
-    """
     num_train = int((1 - test_size) * len(X))
     X_train = X.iloc[:num_train]
     y_train = y_int[:num_train]
@@ -126,7 +121,7 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
 
     sample_w = compute_sample_weights(y_train)
 
-    print("🧠 Training model (XGBoost) on 7 grouped classes...")
+    print("🧠 Training model (XGBoost)...")
     pipe.fit(X_train, y_train, model__sample_weight=sample_w)
 
     # Evaluate
@@ -163,7 +158,7 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
         model = mr.python.create_model(
             name=MODEL_NAME,
             metrics=model_bundle["metrics"],
-            description="XGBoost classifier on grouped police event types (7 classes) using city/day/hour/precipitation.",
+            description="XGBoost classifier on grouped police event types.",
         )
         model.save(tmpdir)
 

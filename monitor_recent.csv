@@ -1,31 +1,31 @@
-datetime,city,hour,day_of_week,precipitation,true_group,pred_group
-2026-01-09 13:54:39+00:00,Kramfors,13,Friday,6.8,Trafik,Trafik
-2026-01-09 15:05:26+00:00,Falun,15,Friday,0.2,Övrigt,Brand
-2026-01-09 15:19:06+00:00,Skellefteå,15,Friday,0.5,Trafik,Trafik
-2026-01-09 15:30:31+00:00,Östersund,15,Friday,0.4,Trafik,Trafik
-2026-01-09 15:35:38+00:00,Borlänge,15,Friday,0.2,Övrigt,Brand
-2026-01-09 15:46:28+00:00,Växjö,15,Friday,0.0,Trafik,Övrigt
-2026-01-09 16:10:36+00:00,Grums,16,Friday,0.1,Trafik,Brand
-2026-01-09 16:25:53+00:00,Örebro,16,Friday,0.1,Rattfylleri/LOB,Brand
-2026-01-09 16:33:47+00:00,Hällefors,16,Friday,0.2,Övrigt,Brand
-2026-01-09 16:48:21+00:00,Jämtlands län,16,Friday,0.2,Trafik,Brand
-2026-01-09 16:52:52+00:00,Nynäshamn,16,Friday,0.1,Våld,Brand
-2026-01-09 17:16:52+00:00,Borlänge,17,Friday,0.2,Stöld/Inbrott,Övrigt
-2026-01-09 17:19:20+00:00,Degerfors,17,Friday,0.0,Trafik,Trafik
-2026-01-09 17:40:35+00:00,Höganäs,17,Friday,0.0,Trafik,Trafik
-2026-01-09 17:47:44+00:00,Askersund,17,Friday,0.1,Trafik,Övrigt
-2026-01-09 17:52:41+00:00,Hallsberg,17,Friday,0.2,Rattfylleri/LOB,Övrigt
-2026-01-09 18:14:31+00:00,Ystad,18,Friday,0.0,Trafik,Trafik
-2026-01-09 18:23:51+00:00,Malmö,18,Friday,0.1,Trafik,Brand
-2026-01-09 18:55:37+00:00,Vellinge,18,Friday,0.0,Trafik,Trafik
-2026-01-09 18:55:46+00:00,Falun,18,Friday,0.2,Trafik,Trafik
-2026-01-09 18:59:25+00:00,Norrbottens län,18,Friday,0.0,Trafik,Trafik
-2026-01-09 19:00:29+00:00,Storuman,19,Friday,6.9,Trafik,Rattfylleri/LOB
-2026-01-09 19:31:48+00:00,Solna,19,Friday,0.1,Våld,Brand
-2026-01-09 20:03:17+00:00,Östersund,20,Friday,0.4,Övrigt,Våld
-2026-01-09 20:17:48+00:00,Falun,20,Friday,0.2,Övrigt,Övrigt
-2026-01-09 20:23:41+00:00,Malmö,20,Friday,0.1,Övrigt,Övrigt
-2026-01-09 20:35:42+00:00,Norrbottens län,20,Friday,0.0,Trafik,Övrigt
-2026-01-09 20:43:19+00:00,Umeå,20,Friday,0.0,Rattfylleri/LOB,Övrigt
-2026-01-09 20:54:21+00:00,Oskarshamn,20,Friday,0.2,Rattfylleri/LOB,Övrigt
-2026-01-09 21:13:04+00:00,Borlänge,21,Friday,0.2,Övrigt,Övrigt
+datetime,city,hour,day_of_week,precipitation,temperature,wind,true_group,pred_group
+2026-01-10 06:49:12+00:00,Östergötlands län,6,Saturday,0.0,-9.4,16.7,Övrigt,Övrigt
+2026-01-10 06:49:34+00:00,Norrköping,6,Saturday,0.0,-8.6,22.1,Våld,Övrigt
+2026-01-10 07:21:53+00:00,Uppsala,7,Saturday,0.0,-6.1,21.9,Övrigt,Trafik
+2026-01-10 08:03:35+00:00,Västerås,8,Saturday,0.0,-9.3,21.3,Våld,Trafik
+2026-01-10 08:28:33+00:00,Östersund,8,Saturday,0.0,-12.6,8.8,Trafik,Trafik
+2026-01-10 08:37:43+00:00,Timrå,8,Saturday,0.0,-15.1,10.3,Övrigt,Trafik
+2026-01-10 08:46:12+00:00,Östhammar,8,Saturday,0.0,-4.7,18.6,Våld,Trafik
+2026-01-10 08:53:08+00:00,Hudiksvall,8,Saturday,0.0,-13.1,10.7,Brand,Trafik
+2026-01-10 09:10:53+00:00,Boden,9,Saturday,0.0,-29.9,7.3,Våld,Trafik
+2026-01-10 09:22:07+00:00,Karlstad,9,Saturday,0.0,-12.7,14.4,Övrigt,Trafik
+2026-01-10 09:37:01+00:00,Skellefteå,9,Saturday,0.0,-24.1,7.3,Stöld/Inbrott,Trafik
+2026-01-10 09:52:46+00:00,Västerbottens län,9,Saturday,0.0,-25.5,3.6,Trafik,Trafik
+2026-01-10 10:23:20+00:00,Västernorrlands län,10,Saturday,0.0,-20.8,7.6,Trafik,Trafik
+2026-01-10 11:03:24+00:00,Kristinehamn,11,Saturday,0.0,-11.6,13.7,Rattfylleri/LOB,Trafik
+2026-01-10 11:05:34+00:00,Hagfors,11,Saturday,0.0,-16.6,7.0,Övrigt,Trafik
+2026-01-10 11:30:35+00:00,Eskilstuna,11,Saturday,0.0,-8.9,19.2,Trafik,Trafik
+2026-01-10 11:37:20+00:00,Norrbottens län,11,Saturday,0.0,-26.7,3.9,Trafik,Trafik
+2026-01-10 12:13:53+00:00,Helsingborg,12,Saturday,0.0,-5.4,16.9,Brand,Trafik
+2026-01-10 12:18:08+00:00,Jämtlands län,12,Saturday,0.4,-11.6,8.0,Trafik,Våld
+2026-01-10 12:35:56+00:00,Örebro,12,Saturday,0.0,-12.0,12.8,Trafik,Trafik
+2026-01-10 12:42:32+00:00,Uppsala,12,Saturday,0.0,-6.1,21.9,Trafik,Trafik
+2026-01-10 13:24:07+00:00,Nora,13,Saturday,0.0,-12.1,13.7,Trafik,Trafik
+2026-01-10 13:30:19+00:00,Krokom,13,Saturday,1.3,-12.7,5.8,Övrigt,Trafik
+2026-01-10 14:00:40+00:00,Ronneby,14,Saturday,0.0,-6.0,19.4,Trafik,Trafik
+2026-01-10 14:19:41+00:00,Hultsfred,14,Saturday,0.0,-8.0,19.9,Brand,Trafik
+2026-01-10 14:47:57+00:00,Vallentuna,14,Saturday,0.0,-5.6,21.4,Övrigt,Trafik
+2026-01-10 15:16:15+00:00,Kalmar,15,Saturday,0.0,-3.0,32.1,Trafik,Trafik
+2026-01-10 16:10:30+00:00,Malmö,16,Saturday,0.0,-4.1,22.4,Våld,Trafik
+2026-01-10 17:18:17+00:00,Klippan,17,Saturday,0.0,-6.7,13.9,Trafik,Övrigt
+2026-01-10 17:39:20+00:00,Lund,17,Saturday,0.0,-6.3,17.0,Trafik,Trafik

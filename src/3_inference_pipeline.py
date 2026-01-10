@@ -32,10 +32,10 @@ if not API_KEY:
 CACHE_FILE = "src/city_coords.json"
 
 MODEL_NAME = "police_crime_model"
-MIN_VERSION = 42
+MIN_VERSION = 43
 
 EVENTS_FG_NAME = "police_events"
-EVENTS_FG_VERSION = 2  # must match your daily FG version
+EVENTS_FG_VERSION = 5  # must match your daily FG version
 
 # ✅ NEW schema for grouped predictions -> use NEW version
 PRED_FG_NAME = "police_predictions"
@@ -62,23 +62,27 @@ def get_tomorrow_weather(city_list):
             "https://api.open-meteo.com/v1/forecast"
             f"?latitude={lat}&longitude={lon}"
             "&daily=precipitation_sum"
+            "&daily=temperature_2m_mean"
+            "&daily=wind_speed_10m_mean"
             "&timezone=auto"
             "&forecast_days=2"
         )
         try:
             r = requests.get(url, timeout=10).json()
-            rain = float(r["daily"]["precipitation_sum"][1])  # tomorrow
-            return city, rain
+            rain = float(r["daily"]["precipitation_sum"][1])
+            temp = float(r["daily"]["temperature_2m_mean"][1])
+            wind = float(r["daily"]["wind_speed_10m_mean"][1])
+            return city, rain, temp, wind
         except Exception:
-            return city, 0.0
+            return city, 0.0, 0.0, 0.0
 
     out = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=12) as ex:
         futures = [ex.submit(fetch_city, c) for c in city_list]
         for fu in concurrent.futures.as_completed(futures):
-            c, rain = fu.result()
-            out[c] = rain
-    return out
+            c, rain, temp, wind = fu.result()
+            out[c] = rain, temp, wind
+    return out  # TODO: This is strange
 
 
 def save_confusion_matrix_png(cm, labels, out_path: str, title: str):
@@ -142,9 +146,9 @@ def inference_and_monitor():
     fg_events = fs.get_feature_group(EVENTS_FG_NAME, version=EVENTS_FG_VERSION)
 
     query = fg_events.select(
-        ["datetime", "city", "hour", "day_of_week", "precipitation", "type_group"]
+        ["datetime", "city", "hour", "day_of_week", "precipitation", "temperature", "wind", "type_group"]
     )
-    df_events = query.read().dropna(subset=["city", "day_of_week", "hour", "precipitation"])
+    df_events = query.read().dropna(subset=["city", "day_of_week", "hour", "precipitation", "temperature", "wind"])
 
     cities = sorted(df_events["city"].dropna().unique().tolist())
 
@@ -155,12 +159,15 @@ def inference_and_monitor():
     tomorrow_str = tomorrow.strftime("%Y-%m-%d")
     day_name = tomorrow.strftime("%A")
 
-    print(f"🌦️ Fetching tomorrow precipitation for {len(cities)} cities...")
+    print(f"🌦️ Fetching tomorrow weather for {len(cities)} cities...")
     weather_map = get_tomorrow_weather(cities)
 
     rows = []
     for city in cities:
-        rain = float(weather_map.get(city, 0.0))
+        rain = float(weather_map.get(city, 0.0)[0])
+        temp = float(weather_map.get(city, 0.0)[1])
+        wind = float(weather_map.get(city, 0.0)[2])
+
         for hour in range(24):
             rows.append(
                 {
@@ -169,6 +176,8 @@ def inference_and_monitor():
                     "day_of_week": day_name,
                     "hour": int(hour),
                     "precipitation": rain,
+                    "temperature": temp,
+                    "wind": wind,
                 }
             )
     df_batch = pd.DataFrame(rows)
@@ -194,11 +203,11 @@ def inference_and_monitor():
         version=PRED_FG_VERSION,
         primary_key=["date", "city", "hour"],
         event_time="date",
-        description="Daily predicted police event type groups (7 classes) per city/hour + precipitation",
+        description="Daily predicted police event type groups",
     )
 
     df_to_insert = df_batch[
-        ["date", "city", "hour", "day_of_week", "precipitation", "predicted_type_group"]
+        ["date", "city", "hour", "day_of_week", "precipitation", "temperature", "wind", "predicted_type_group"]
     ].copy()
 
     print("💾 Inserting predictions to Hopsworks...")
@@ -210,7 +219,7 @@ def inference_and_monitor():
     # -----------------------------
     N = 200
     df_recent = df_events.sort_values("datetime").tail(N).dropna(
-        subset=["city", "day_of_week", "hour", "precipitation", "type_group"]
+        subset=["city", "day_of_week", "hour", "precipitation", "temperature", "wind", "type_group"]
     )
 
     X_recent = df_recent[feature_cols].copy()
@@ -224,6 +233,8 @@ def inference_and_monitor():
             "hour": df_recent["hour"].values,
             "day_of_week": df_recent["day_of_week"].values,
             "precipitation": df_recent["precipitation"].values,
+            "temperature": df_recent["temperature"].values,
+            "wind": df_recent["wind"].values,
             "true_group": y_true.values,
             "pred_group": y_hat.values,
         }
@@ -239,7 +250,7 @@ def inference_and_monitor():
         cm,
         labels,
         "monitor_confusion_matrix.png",
-        title=f"Monitoring Confusion Matrix (Last {len(df_recent)} real events) - 7 groups",
+        title=f"Monitoring Confusion Matrix (Last {len(df_recent)} real events)",
     )
     print("🧠 Saved: monitor_confusion_matrix.png")
 

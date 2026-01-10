@@ -95,7 +95,7 @@ def get_smart_coordinates(city_list):
 # -----------------------------
 # Weather (historical) via Open-Meteo Archive API (cached)
 # -----------------------------
-def get_precipitation_for_city_date(
+def get_weather_for_city_date(
     city: str,
     lat: float,
     lon: float,
@@ -104,28 +104,34 @@ def get_precipitation_for_city_date(
 ) -> float:
     key = f"{city}|{yyyy_mm_dd}"
     if key in weather_cache:
-        return float(weather_cache[key])
+        return (float(v) for v in weather_cache[key])
 
     url = (
         "https://archive-api.open-meteo.com/v1/archive"
         f"?latitude={lat}&longitude={lon}"
         f"&start_date={yyyy_mm_dd}&end_date={yyyy_mm_dd}"
         "&daily=precipitation_sum"
+        "&daily=temperature_2m_mean"
+        "&daily=wind_speed_10m_mean"
         "&timezone=UTC"
     )
 
     try:
         res = SESSION.get(url, timeout=20).json()
         precip = float(res["daily"]["precipitation_sum"][0])
+        temp = float(res["daily"]["temperature_2m_mean"][0])
+        wind = float(res["daily"]["wind_speed_10m_mean"][0])
     except Exception:
         precip = 0.0
+        temp = 0.0
+        wind = 0.0
 
-    weather_cache[key] = precip
-    return precip
+    weather_cache[key] = precip, temp, wind
+    return precip, temp, wind
 
 
 def add_weather_feature(df: pd.DataFrame, coords_map: dict) -> pd.DataFrame:
-    print("🌦️ Adding historical precipitation (Archive API)...")
+    print("🌦️ Adding historical weather (Archive API)...")
     weather_cache = _load_json(WEATHER_CACHE_FILE)
     updated = False
 
@@ -134,19 +140,27 @@ def add_weather_feature(df: pd.DataFrame, coords_map: dict) -> pd.DataFrame:
 
     pairs = df[["city", "event_date"]].drop_duplicates()
 
-    precip_map = {}
+    weather_map = {}
     for _, row in pairs.iterrows():
         city = row["city"]
         d = row["event_date"]
         lat = coords_map.get(city, {}).get("lat", 59.3293)
         lon = coords_map.get(city, {}).get("lon", 18.0686)
 
-        precip = get_precipitation_for_city_date(city, lat, lon, d, weather_cache)
-        precip_map[f"{city}|{d}"] = precip
+        precip, temp, wind = get_weather_for_city_date(city, lat, lon, d, weather_cache)
+        weather_map[f"{city}|{d}"] = precip, temp, wind
         updated = True
 
     df["precipitation"] = df.apply(
-        lambda r: float(precip_map.get(f"{r['city']}|{r['event_date']}", 0.0)),
+        lambda r: float(weather_map.get(f"{r['city']}|{r['event_date']}", 0.0)[0]),
+        axis=1,
+    )
+    df["temperature"] = df.apply(
+        lambda r: float(weather_map.get(f"{r['city']}|{r['event_date']}", 0.0)[1]),
+        axis=1,
+    )
+    df["wind"] = df.apply(
+        lambda r: float(weather_map.get(f"{r['city']}|{r['event_date']}", 0.0)[2]),
         axis=1,
     )
 
@@ -203,13 +217,15 @@ def get_police_data() -> pd.DataFrame | None:
     df = add_weather_feature(df, coords_map)
 
     # keep only needed columns
-    df = df[["id", "datetime", "city", "day_of_week", "hour", "precipitation", "type"]].copy()
+    df = df[["id", "datetime", "city", "day_of_week", "hour", "precipitation", "temperature", "wind", "type"]].copy()
 
     # types
     df["id"] = df["id"].astype(str)
     df["city"] = df["city"].astype(str)
     df["type"] = df["type"].astype(str)
     df["precipitation"] = pd.to_numeric(df["precipitation"], errors="coerce").fillna(0.0).astype(float)
+    df["temperature"] = pd.to_numeric(df["temperature"], errors="coerce").fillna(0.0).astype(float)
+    df["wind"] = pd.to_numeric(df["wind"], errors="coerce").fillna(0.0).astype(float)
 
     # protect against duplicates inside same run
     df = df.drop_duplicates(subset=["id"])
@@ -229,7 +245,7 @@ def to_hopsworks(df: pd.DataFrame):
     df = add_type_group(df, src_col="type", dst_col="type_group")
 
     # ✅ Ensure schema/columns are exactly what we want
-    required_cols = ["id", "datetime", "city", "day_of_week", "hour", "precipitation", "type", "type_group"]
+    required_cols = ["id", "datetime", "city", "day_of_week", "hour", "precipitation", "temperature", "wind", "type", "type_group"]
     missing = [c for c in required_cols if c not in df.columns]
     if missing:
         raise RuntimeError(f"Missing required columns before insert: {missing}")
@@ -238,7 +254,7 @@ def to_hopsworks(df: pd.DataFrame):
 
     police_fg = fs.get_or_create_feature_group(
         name="police_events",
-        version=3,
+        version=5,
         primary_key=["id"],
         event_time="datetime",
         description="Police events with weather + grouped label (type_group)",
