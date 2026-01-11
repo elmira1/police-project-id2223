@@ -18,4 +18,7 @@ The following three parts make up the project pipeline:
 
 ## UI
 
-The UI is a simple dashboard built with Streamlit [https://streamlit.io/]
+The UI is a simple dashboard built with Streamlit [https://streamlit.io/].
+
+View it here:
+https://huggingface.co/spaces/johnaren/police-project-id2223
