@@ -30,4 +30,5 @@ The UI is a simple dashboard built with Streamlit [https://streamlit.io/].
 
 View it here:
 
-https://huggingface.co/spaces/johnaren/police-project-id2223
+https://police-project-id2223-q9h4nha8xcc6hkjwgnqcxj.streamlit.app/
+
