@@ -53,7 +53,7 @@ def map_type_to_group(event_type: str) -> str:
 
     # 4) Violence
     vald_keywords = [
-        "misshandel", "våld", "våldt", "mord", "dråp", "bråk",
+        "misshandel", "våld", "våldt", "mord", "dråp", "bråk", "rån",
         "olaga hot", "hot", "hemfridsbrott", "vållande", "människorov",
         "skottlossning", "explosion", "sexualbrott"
     ]
@@ -61,12 +61,15 @@ def map_type_to_group(event_type: str) -> str:
         return "Violence"
 
     # 5) Theft / burglary
-    if "stöld" in t or "inbrott" in t or "rån" in t:
-        return "Burglary, theft and robbery"
+    if "stöld" in t or "inbrott" in t:
+        return "Burglary and theft"
 
     # 6) Fire
     if "brand" in t:
         return "Fire"
+    
+    if "bedrägeri" in t:
+        return "Fraud"
 
     return "Other"
 

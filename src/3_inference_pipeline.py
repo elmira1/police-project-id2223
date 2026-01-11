@@ -32,10 +32,10 @@ if not API_KEY:
 CACHE_FILE = "src/city_coords.json"
 
 MODEL_NAME = "police_crime_model"
-MIN_VERSION = 43
+MIN_VERSION = 48
 
 EVENTS_FG_NAME = "police_events"
-EVENTS_FG_VERSION = 5  # must match your daily FG version
+EVENTS_FG_VERSION = 6  # must match your daily FG version
 
 # ✅ NEW schema for grouped predictions -> use NEW version
 PRED_FG_NAME = "police_predictions"

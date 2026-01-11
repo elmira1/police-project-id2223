@@ -34,7 +34,7 @@ if not API_KEY:
 
 
 FG_NAME = "police_events"
-FG_VERSION = 5
+FG_VERSION = 6
 
 MODEL_NAME = "police_crime_model"
 
@@ -98,6 +98,7 @@ def train_model(min_count: int = 30, test_size: float = 0.2) -> None:
     keep = vc[vc >= min_count].index.tolist()
     df = df[df[LABEL_COL].isin(keep)].copy()
     df = df.sort_values("datetime")
+    df = df[df["type_group"] != "Other"]
 
     print(f"✅ Kept {len(keep)} grouped classes (min_count={min_count})")
     print(f"✅ Rows after filtering: {len(df)}")

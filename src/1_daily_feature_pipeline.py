@@ -17,6 +17,8 @@ from label_map import add_type_group
 api_key = None
 project_name = "id2223_lab1_G22"
 
+FG_VERSION = 6
+
 CACHE_FILE = "src/city_coords.json"            # city -> {lat, lon}
 WEATHER_CACHE_FILE = "src/weather_cache.json"  # (city|yyyy-mm-dd) -> precipitation
 
@@ -254,7 +256,7 @@ def to_hopsworks(df: pd.DataFrame):
 
     police_fg = fs.get_or_create_feature_group(
         name="police_events",
-        version=5,
+        version=FG_VERSION,
         primary_key=["id"],
         event_time="datetime",
         description="Police events with weather + grouped label (type_group)",
