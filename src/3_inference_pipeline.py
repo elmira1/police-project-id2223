@@ -39,7 +39,7 @@ EVENTS_FG_VERSION = 6  # must match your daily FG version
 
 # ✅ NEW schema for grouped predictions -> use NEW version
 PRED_FG_NAME = "police_predictions"
-PRED_FG_VERSION = 6
+PRED_FG_VERSION = 7
 
 
 # -----------------------------
