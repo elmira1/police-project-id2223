@@ -41,7 +41,7 @@ st.title(TITLE)
 st.write(DESCRIPTION)
 
 
-@st.cache_data(show_spinner=False, ttl=600)
+#@st.cache_data(show_spinner=False, ttl=600)
 def load_predictions():
     """
     Read unique cities from the feature group.
@@ -54,7 +54,7 @@ def load_predictions():
     return df
 
 
-@st.cache_data(show_spinner=False, ttl=600)
+#@st.cache_data(show_spinner=False, ttl=600)
 def load_events():
     project = hopsworks.login(api_key_value=API_KEY, project=PROJECT_NAME)
     fs = project.get_feature_store()
