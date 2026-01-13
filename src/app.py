@@ -10,7 +10,7 @@ FG_NAME = "police_events"
 FG_VERSION = 6
 
 PRED_FG_NAME = "police_predictions"
-PRED_FG_VERSION = 6
+PRED_FG_VERSION = 7
 
 
 # -----------------------------
