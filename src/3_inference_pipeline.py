@@ -55,7 +55,8 @@ def get_tomorrow_weather(city_list):
     def fetch_city(city):
         info = coords_map.get(city)
         if not info:
-            return city, 0.0
+            print(f"{city} not found in cache, using default location!")
+            info = coords_map.get("Stockholm")
 
         lat, lon = info["lat"], info["lon"]
         url = (
